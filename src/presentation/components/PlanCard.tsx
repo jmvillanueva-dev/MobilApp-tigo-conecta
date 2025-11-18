@@ -14,13 +14,13 @@ type GradientColors = [string, string, ...string[]];
 
 interface PlanCardProps {
   plan: PlanMovil;
-  onPress: () => void;
+  onPress: () => void; // Acción general (o Ver Detalles)
+  onContract?: () => void; // Acción específica Contratar
   isAdmin?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
-// Colores de gradiente por defecto
 const defaultGradients: Record<string, GradientColors> = {
   default: ["#6E86FF", "#4A6BFF"],
   smart: ["#6E86FF", "#4A6BFF"],
@@ -39,6 +39,7 @@ const getGradient = (planName: string): GradientColors => {
 export function PlanCard({
   plan,
   onPress,
+  onContract,
   isAdmin,
   onEdit,
   onDelete,
@@ -95,15 +96,28 @@ export function PlanCard({
               <Text style={styles.featureText}>{minutos}</Text>
             </View>
           </View>
-
-          {/* Si NO es admin, mostramos el botón "Ver Detalles" clásico */}
-          {!isAdmin && (
-            <View style={styles.detailsButton}>
-              <Text style={styles.detailsButtonText}>Ver Detalles</Text>
-            </View>
-          )}
         </View>
       </TouchableOpacity>
+
+      {/* --- SECCIÓN DE USUARIO (BOTONES DETALLES/CONTRATAR) --- */}
+      {!isAdmin && (
+        <View style={styles.userActions}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.detailsButton]}
+            onPress={onPress}
+          >
+            <Text style={styles.detailsButtonText}>Ver Detalles</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, styles.contractButton]}
+            onPress={onContract || onPress}
+          >
+            <Text style={styles.contractButtonText}>Contratar</Text>
+            <Ionicons name="chevron-forward" size={16} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* --- SECCIÓN DE ADMIN (BOTONES EDITAR/ELIMINAR) --- */}
       {isAdmin && (
@@ -149,7 +163,7 @@ const styles = StyleSheet.create({
   imageStyle: { borderRadius: 16 },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    backgroundColor: "rgba(10, 31, 38, 0.75)",
   },
   contentContainer: {
     padding: 20,
@@ -188,20 +202,37 @@ const styles = StyleSheet.create({
   featureItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   featureText: { color: "#FFFFFF", fontSize: 14, fontWeight: "500" },
 
-  detailsButton: {
+  // --- Estilos Usuario ---
+  userActions: {
+    flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
+    padding: 12,
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 10,
-    marginBottom: 10,
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 5,
   },
-  detailsButtonText: { color: "#007AFF", fontSize: 16, fontWeight: "bold" },
+  detailsButton: {
+    backgroundColor: "#F2F2F7",
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+  },
+  detailsButtonText: { color: "#007AFF", fontSize: 14, fontWeight: "600" },
+  contractButton: {
+    backgroundColor: "#007AFF",
+  },
+  contractButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold" },
 
   // --- Estilos Admin ---
   adminActions: {
     flexDirection: "row",
-    backgroundColor: "#F8F9FA", // Fondo gris claro para diferenciar
+    backgroundColor: "#F8F9FA",
     borderTopWidth: 1,
     borderTopColor: "#EEE",
   },
@@ -213,20 +244,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 8,
   },
-  editButton: {
-    backgroundColor: "#FFF", // Verde
-  },
-  deleteButton: {
-    backgroundColor: "#FFF", // Rojo
-  },
-  adminButtonTextEdit: {
-    color: "#34C759",
-    fontWeight: "bold",
-    fontSize: 15,
-  },
-  adminButtonTextDelete: {
-    color: "#FF3B30",
-    fontWeight: "bold",
-    fontSize: 15,
-  },
+  editButton: { backgroundColor: "#FFF" },
+  deleteButton: { backgroundColor: "#FFF" },
+  adminButtonTextEdit: { color: "#34C759", fontWeight: "bold", fontSize: 15 },
+  adminButtonTextDelete: { color: "#FF3B30", fontWeight: "bold", fontSize: 15 },
 });
