@@ -42,6 +42,7 @@ export default function AsesorTabLayout() {
         name="solicitudes"
         options={{
           title: "Solicitudes",
+          headerShown: false,
           headerTitle: "Solicitudes de Contratación",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -96,7 +97,6 @@ export default function AsesorTabLayout() {
           tabBarStyle: { display: "none" },
         }}
       />
-
     </Tabs>
   );
 }
