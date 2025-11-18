@@ -5,16 +5,8 @@ import {
   useAuth,
 } from "../src/presentation/contexts/AuthContext";
 
-// Escondemos el Splash Screen manualmente
 SplashScreen.preventAutoHideAsync();
 
-/**
- * Layout Raíz (RootLayout)
- * Este es el componente principal que envuelve toda la app.
- * 1. Provee el AuthContext a toda la aplicación.
- * 2. Define el Stack de navegación principal.
- * 3. Contiene la lógica de redirección (RootLayoutNav).
- */
 export default function RootLayout() {
   return (
     <AuthProvider>
@@ -23,26 +15,20 @@ export default function RootLayout() {
   );
 }
 
-/**
- * RootLayoutNav
- * Este componente vive DENTRO del AuthProvider,
- * por lo que tiene acceso al estado de autenticación (useAuth).
- */
 function RootLayoutNav() {
-  const { session, isLoading, role, profile } = useAuth();
+  const { session, isLoading, role, profile, isSigningOut } = useAuth();
   const router = useRouter();
-  const segments = useSegments(); // Segmentos de la ruta actual, ej: ['(auth)', 'login']
+  const segments = useSegments();
 
   useEffect(() => {
-    if (isLoading) {
-      // Aún estamos cargando la sesión, no hacer nada (Splash Screen sigue activo)
+    // No hacer nada si está cargando O cerrando sesión
+    if (isLoading || isSigningOut) {
       return;
     }
 
-    // Ya terminamos de cargar
+    // Ya terminamos de cargar y no estamos cerrando sesión
     SplashScreen.hideAsync();
 
-    const inAuthGroup = segments[0] === "(auth)";
     const inAppGroup =
       segments[0] === "(usuario)" ||
       segments[0] === "(asesor)" ||
@@ -50,25 +36,18 @@ function RootLayoutNav() {
 
     if (session && profile) {
       // --- Usuario AUTENTICADO ---
-
-      const userGroup = `(${
-        role === "asesor_comercial" ? "asesor" : "usuario"
-      })`; // (asesor) o (usuario)
-
       // 1. Si está autenticado y su rol es 'asesor', llévalo a su panel
       if (role === "asesor_comercial" && segments[0] !== "(asesor)") {
-        router.replace("/(asesor)/"); // Ruta inicial de asesor
+        router.replace("/(asesor)");
       }
-
       // 2. Si está autenticado y su rol es 'registrado', llévalo a su panel
       else if (role === "usuario_registrado" && segments[0] !== "(usuario)") {
-        router.replace("/(usuario)/"); // Ruta inicial de usuario
+        router.replace("/(usuario)");
       }
-
       // 3. Si está autenticado pero visita 'index' o '(auth)', redirigir
       else if (!inAppGroup) {
         router.replace(
-          role === "asesor_comercial" ? "/(asesor)/" : "/(usuario)/"
+          role === "asesor_comercial" ? "/(asesor)" : "/(usuario)"
         );
       }
     } else {
@@ -80,15 +59,12 @@ function RootLayoutNav() {
       }
       // Si está en 'index' o '(auth)' o '(guest)', se queda ahí.
     }
-  }, [session, isLoading, role, segments]);
+  }, [session, isLoading, role, segments, profile, isSigningOut, router]); 
 
   return (
     <Stack>
-      {/* 1. Pantalla de Bienvenida y Autenticación */}
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-
-      {/* 2. Paneles de Roles (Tabs) */}
       <Stack.Screen name="(guest)" options={{ headerShown: false }} />
       <Stack.Screen name="(usuario)" options={{ headerShown: false }} />
       <Stack.Screen name="(asesor)" options={{ headerShown: false }} />

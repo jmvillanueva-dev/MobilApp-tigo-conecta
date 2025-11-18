@@ -2,7 +2,6 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/presentation/contexts/AuthContext";
-import { Text } from "react-native";
 
 /**
  * Layout principal para el 'Usuario Registrado'

@@ -18,6 +18,7 @@ import { useAuth } from "../../src/presentation/contexts/AuthContext";
 
 export default function PerfilScreen() {
   const {
+    session,
     user,
     profile,
     signOut,
@@ -36,6 +37,13 @@ export default function PerfilScreen() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
+  // Validación de sesión - redirige inmediatamente si no hay sesión
+  useEffect(() => {
+    if (!isAuthLoading && !session) {
+      router.replace("/(auth)/login");
+    }
+  }, [session, isAuthLoading, router]);
+
   // Inicializa los campos del formulario cuando el perfil se carga
   useEffect(() => {
     if (profile) {
@@ -47,10 +55,24 @@ export default function PerfilScreen() {
     }
   }, [profile, user]);
 
+  // Si no hay sesión válida, mostrar loading mientras se redirige
+  if (!session) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text>Debes iniciar sesión para acceder al contenido</Text>
+        <Text>Redirigiendo...</Text>
+      </View>
+    );
+  }
+
   const handleSignOut = async () => {
-    await signOut();
-    // El RootLayout se encargará de redirigir
-    router.replace("/(auth)/login");
+    try {
+      router.navigate("/(auth)/login");
+      await signOut();
+    } catch (error) {
+      console.error("Error durante cierre de sesión:", error);
+    }
   };
 
   const onEditPress = () => {
@@ -150,7 +172,8 @@ export default function PerfilScreen() {
     }
   };
 
-  if (isAuthLoading || !profile || !user) {
+  // Mostrar loading mientras se verifica la autenticación o si no hay sesión válida
+  if (isAuthLoading || !session || !profile || !user) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />

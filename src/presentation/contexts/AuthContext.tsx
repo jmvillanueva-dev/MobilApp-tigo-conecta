@@ -9,13 +9,13 @@ import {
   SignUpData,
 } from "../../domain/repositories/AuthRepository";
 
-// 1. Definimos la forma del estado de autenticación
 export interface AuthState {
   session: Session | null;
   user: AppUser | null;
   profile: Profile | null;
   role: UserRole | null;
   isLoading: boolean;
+  isSigningOut: boolean;
   signIn: (credentials: AuthCredentials) => Promise<{ error: any }>;
   signUp: (data: SignUpData) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -28,10 +28,8 @@ export interface AuthState {
   ) => Promise<{ user: User | null; error: any }>;
 }
 
-// 2. Creamos el contexto con un valor por defecto
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-// 3. Creamos el Proveedor (Provider)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -40,17 +38,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false); // <- NUEVO
 
-  // Instanciamos nuestro repositorio
   const authRepository: AuthRepository = new SupabaseAuthRepository();
 
   useEffect(() => {
     setIsLoading(true);
 
-    // 1. Intentar obtener la sesión activa al cargar la app
     authRepository.getSession().then(async ({ session, error }) => {
       if (session) {
-        // Si hay sesión, cargar el perfil
         const { profile, error: profileError } =
           await authRepository.getProfile(session.user.id);
 
@@ -60,7 +56,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setProfile(profile);
           setRole(profile.rol);
         } else {
-          // Caso raro: sesión existe pero perfil no. Forzar cierre.
           console.error(
             "Error: Perfil no encontrado, cerrando sesión.",
             profileError
@@ -71,10 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsLoading(false);
     });
 
-    // 2. Escuchar cambios de autenticación (Login, Logout)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
-        // --- INICIO: LÓGICA DE ACTUALIZACIÓN DE ESTADO ---
         const updateState = async (session: Session | null) => {
           if (session) {
             const { profile, error } = await authRepository.getProfile(
@@ -83,7 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
             if (profile) {
               setSession(session);
-              // Actualiza el email en el objeto 'user' si cambió
               const authUser = session.user;
               setUser({ ...authUser, profile } as AppUser);
               setProfile(profile);
@@ -102,31 +94,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setRole(null);
           }
         };
-        // --- FIN: LÓGICA DE ACTUALIZACIÓN DE ESTADO ---
 
-        // Manejamos eventos específicos
         if (_event === "SIGNED_IN" || _event === "INITIAL_SESSION") {
           await updateState(newSession);
         } else if (_event === "SIGNED_OUT") {
           await updateState(null);
         } else if (_event === "USER_UPDATED") {
-          // Esto se dispara cuando se actualiza el email/pass
-          // o cuando el trigger de registro termina.
           await updateState(newSession);
         }
 
-        // La carga inicial solo termina después del primer chequeo
         setIsLoading(false);
       }
     );
 
-    // Limpiar el listener al desmontar
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, []);
 
-  // 3. Funciones de autenticación expuestas
   const signIn = async (credentials: AuthCredentials) => {
     const { error } = await authRepository.signInWithEmail(credentials);
     return { error };
@@ -138,8 +123,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const signOut = async () => {
-    await authRepository.signOut();
-    // El listener onAuthStateChanged se encargará de limpiar el estado.
+    setIsSigningOut(true);
+    try {
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setRole(null);
+      await authRepository.signOut()
+    } catch (error) {
+      console.error("Error durante signOut:", error);
+    } finally {
+      setIsSigningOut(false); // <- NUEVO: Limpiar el estado
+    }
   };
 
   const resetPassword = async (email: string) => {
@@ -147,9 +142,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return { error };
   };
 
-  /**
-   * Actualiza los datos del perfil (nombre, teléfono)
-   */
   const updateProfileData = async (
     updates: Partial<Omit<Profile, "id" | "rol" | "created_at">>
   ) => {
@@ -161,7 +153,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await authRepository.updateProfile(user.id, updates);
 
     if (updatedProfile) {
-      // Actualizamos el estado local inmediatamente
       setProfile(updatedProfile);
       setUser((prevUser) =>
         prevUser ? ({ ...prevUser, profile: updatedProfile } as AppUser) : null
@@ -171,38 +162,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return { profile: updatedProfile, error };
   };
 
-  /**
-   * Actualiza el email de autenticación
-   */
   const updateAuthEmail = async (email: string) => {
     const { user: updatedUser, error } = await authRepository.updateUserEmail(
       email
     );
-    // Nota: El listener 'onAuthStateChange' con evento 'USER_UPDATED'
-    // se disparará si el email necesita confirmación,
-    // o actualizará la sesión si el cambio es inmediato.
     return { user: updatedUser, error };
   };
 
-  // 4. Valor que proveeremos al resto de la app
+  // Valor actualizado que incluye isSigningOut
   const value = {
     session,
     user,
     profile,
     role,
     isLoading,
+    isSigningOut,
     signIn,
     signUp,
     signOut,
     resetPassword,
-    updateProfileData, 
+    updateProfileData,
     updateAuthEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// 5. Hook personalizado para consumir el contexto
 export const useAuth = (): AuthState => {
   const context = useContext(AuthContext);
   if (context === undefined) {

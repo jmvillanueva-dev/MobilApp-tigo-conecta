@@ -1,27 +1,44 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from "react-native";
-import { useAuth } from "../../src/presentation/contexts/AuthContext";
 import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../src/presentation/contexts/AuthContext";
 
 /**
  * Pantalla de Inicio (Temporal)
  * Sirve para probar el flujo de autenticación y el botón de SignOut.
  */
 export default function HomeScreen() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, session, isLoading } = useAuth();
   const router = useRouter();
+
+  // Validación de sesión - redirige inmediatamente si no hay sesión
+  useEffect(() => {
+    if (!isLoading && !session) {
+      router.replace("/(auth)/login");
+    }
+  }, [session, isLoading, router]);
+
+  // Si no hay sesión válida, mostrar loading mientras se redirige
+  if (!session) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   const handleSignOut = async () => {
     await signOut();
     // El RootLayout se encargará de redirigir a '/'
-    router.replace("/(auth)/login"); 
+    router.replace("/");
   };
 
   return (
@@ -113,5 +130,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F2F2F7",
   },
 });

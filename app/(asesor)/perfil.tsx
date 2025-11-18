@@ -24,6 +24,7 @@ import { useAuth } from "../../src/presentation/contexts/AuthContext";
  */
 export default function PerfilScreenAsesor() {
   const {
+    session,
     user,
     profile,
     signOut,
@@ -42,6 +43,13 @@ export default function PerfilScreenAsesor() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
+  // Validación de sesión - redirige inmediatamente si no hay sesión
+    useEffect(() => {
+      if (!isAuthLoading && !session) {
+        router.replace("/(auth)/login");
+      }
+    }, [session, isAuthLoading, router]);
+
   // Inicializa los campos del formulario cuando el perfil se carga
   useEffect(() => {
     if (profile) {
@@ -53,10 +61,24 @@ export default function PerfilScreenAsesor() {
     }
   }, [profile, user]);
 
+  // Si no hay sesión válida, mostrar loading mientras se redirige
+    if (!session && !isAuthLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text>Debes iniciar sesión para acceder al contenido</Text>
+          <Text>Redirigiendo...</Text>
+        </View>
+      );
+    }
+
   const handleSignOut = async () => {
-    await signOut();
-    // El RootLayout se encargará de redirigir
-    router.replace("/"); 
+    try {
+      router.navigate("/(auth)/login");
+      await signOut();
+    } catch (error) {
+      console.error("Error durante cierre de sesión:", error);
+    }
   };
 
   const onEditPress = () => {
