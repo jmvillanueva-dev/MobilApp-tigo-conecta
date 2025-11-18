@@ -50,18 +50,19 @@ export default function MisPlanesScreen() {
 
     fetchContrataciones();
 
-    // Escuchar cambios en mis contrataciones (ej: cuando el asesor aprueba)
+    // Escuchar cambios en mis contrataciones (INSERT, UPDATE, DELETE)
     const subscription = supabase
       .channel("mis-contrataciones")
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          event: "*", // <--- CAMBIO CLAVE: Escuchar TODO (INSERT para nuevos contratos, UPDATE para cambios de estado)
           schema: "public",
           table: "contrataciones",
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
+          console.log("Cambio detectado en mis contrataciones:", payload);
           fetchContrataciones();
         }
       )
@@ -154,7 +155,7 @@ export default function MisPlanesScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <StatusBar barStyle="light-content" />
-      
+
       <FlatList
         data={contrataciones}
         keyExtractor={(item) => item.id}
