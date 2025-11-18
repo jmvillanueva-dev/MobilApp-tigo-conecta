@@ -262,7 +262,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#999",
     marginTop: 20,
-    transform: [{ scaleY: -1 }],
   },
 
   messageBubble: {

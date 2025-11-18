@@ -232,7 +232,7 @@ export default function ChatScreen() {
                 transform: [{ scaleY: -1 }],
               }}
             >
-              <Text style={{ color: "#999" }}>
+              <Text style={{ color: "#999", transform: [{ scaleX: -1 }] }}>
                 Inicia la conversación con un asesor.
               </Text>
             </View>
@@ -241,7 +241,6 @@ export default function ChatScreen() {
       )}
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
