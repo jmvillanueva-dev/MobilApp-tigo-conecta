@@ -9,6 +9,7 @@ export interface Profile {
   rol: UserRole;
   full_name: string | null;
   phone: string | null;
+  expo_push_token?: string | null;
   updated_at: string;
   created_at: string;
 }
