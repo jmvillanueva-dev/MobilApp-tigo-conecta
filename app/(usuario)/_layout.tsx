@@ -47,6 +47,7 @@ export default function UserTabLayout() {
         name="index"
         options={{
           title: "Inicio",
+          headerShown: false,
           headerTitle: headerTitle,
         }}
       />
@@ -69,6 +70,14 @@ export default function UserTabLayout() {
         options={{
           title: "Perfil",
           headerTitle: "Mi Perfil",
+        }}
+      />
+      <Tabs.Screen
+        name="plan-detail"
+        options={{
+          href: null,
+          headerShown: false,
+          tabBarStyle: { display: "none" },
         }}
       />
     </Tabs>
