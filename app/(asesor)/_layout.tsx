@@ -91,21 +91,12 @@ export default function AsesorTabLayout() {
       <Tabs.Screen
         name="plan-form"
         options={{
-          href: null, // <--- ESTO LA OCULTA DEL MENÚ
-          headerShown: false, // Ocultamos el header del Tab para usar el propio de la pantalla
-          tabBarStyle: { display: "none" }, // Opcional: Oculta la barra inferior al entrar aquí
+          href: null,
+          headerShown: false,
+          tabBarStyle: { display: "none" },
         }}
       />
 
-      {/* Si tenías 'explore.tsx' y ya no lo usas, puedes eliminar el archivo 
-         o añadirlo aquí también con href: null si quieres conservarlo oculto.
-      */}
-      <Tabs.Screen
-        name="explore"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }

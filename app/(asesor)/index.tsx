@@ -182,6 +182,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: 20,
+    paddingVertical: 10,
     flexDirection: "column",
     justifyContent: "space-between",
     alignItems: "center",
