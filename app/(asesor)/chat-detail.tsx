@@ -14,10 +14,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { RealtimeChannel } from "@supabase/supabase-js";
 import { SupabaseChatRepository } from "../../src/data/repositories/SupabaseChatRepository";
 import { supabase } from "../../src/data/services/supabaseClient";
 import { Message } from "../../src/domain/entities/Message";
 import { useAuth } from "../../src/presentation/contexts/AuthContext";
+
+const repo = new SupabaseChatRepository();
 
 export default function AdvisorChatScreen() {
   const router = useRouter();
@@ -32,9 +35,11 @@ export default function AdvisorChatScreen() {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-
-  const repo = new SupabaseChatRepository();
+  const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentAt = useRef<number>(0);
 
   useEffect(() => {
     if (!contratacionId) return;
@@ -50,7 +55,7 @@ export default function AdvisorChatScreen() {
     // --- REALTIME SUBSCRIPTION ---
     // Escuchamos nuevos mensajes en esta contratación específica
     const channel = supabase
-      .channel(`advisor-chat-${contratacionId}`)
+      .channel(`chat-${contratacionId}`)
       .on(
         "postgres_changes",
         {
@@ -65,12 +70,47 @@ export default function AdvisorChatScreen() {
           setMessages((prev) => [newMessage, ...prev]);
         }
       )
+      .on("broadcast", { event: "typing" }, (payload) => {
+        // Solo mostrar "escribiendo" si viene de otro usuario
+        if (payload.payload.userId !== user?.id) {
+          setIsTyping(true);
+          // Auto-ocultar después de 3 segundos
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+          }
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+          }, 3000);
+        }
+      })
       .subscribe();
+
+    channelRef.current = channel;
 
     return () => {
       supabase.removeChannel(channel);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
-  }, [contratacionId]);
+  }, [contratacionId, user?.id]);
+
+  const handleInputChange = (text: string) => {
+    setInputText(text);
+
+    // Enviar evento de "typing" solo si hay texto y ha pasado más de 2 segundos desde el último envío
+    if (text.trim() && channelRef.current && user) {
+      const now = Date.now();
+      if (now - lastTypingSentAt.current > 2000) {
+        channelRef.current.send({
+          type: "broadcast",
+          event: "typing",
+          payload: { userId: user.id },
+        });
+        lastTypingSentAt.current = now;
+      }
+    }
+  };
 
   const handleSend = async () => {
     if (!inputText.trim() || !user) return;
@@ -151,6 +191,15 @@ export default function AdvisorChatScreen() {
           renderItem={renderMessage}
           inverted // Importante: La lista crece hacia arriba
           contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            isTyping ? (
+              <View style={styles.typingContainer}>
+                <Text style={styles.typingText}>
+                  El cliente está escribiendo...
+                </Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               Inicia la conversación con el cliente.
@@ -168,7 +217,7 @@ export default function AdvisorChatScreen() {
           <TextInput
             style={styles.input}
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={handleInputChange}
             placeholder="Escribe un mensaje..."
             multiline
           />
@@ -268,4 +317,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   disabledSend: { backgroundColor: "#B0B0B0" },
+
+  // Estilos para el indicador de typing
+  typingContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  typingText: {
+    fontSize: 14,
+    color: "#666",
+    fontStyle: "italic",
+  },
 });
