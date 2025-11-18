@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SupabasePlanRepository } from "../../src/data/repositories/SupabasePlanRepository";
+import { supabase } from "../../src/data/services/supabaseClient";
 import { PlanMovil } from "../../src/domain/entities/Plan";
 import { PlanRepository } from "../../src/domain/repositories/PlanRepository";
 import { PlanCard } from "../../src/presentation/components/PlanCard";
@@ -91,6 +92,28 @@ export default function ExploreScreen() {
     };
 
     fetchPlans();
+
+    // --- REALTIME SUSCRIPCIÓN ---
+    const subscription = supabase
+      .channel("planes-updates-guest")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "planes_moviles",
+          filter: "activo=eq.true", // (Opcional) Filtro a nivel de socket si Supabase lo soporta, sino filtrar en cliente
+        },
+        () => {
+          // Recargar lista cuando haya cambios
+          fetchPlans();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   // Lógica de filtrado (sin cambios)
