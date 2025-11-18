@@ -4,17 +4,14 @@ import {
   SignUpData,
 } from "../../domain/repositories/AuthRepository";
 import { Profile } from "../../domain/entities/User";
-import { supabase } from "../services/supabaseClient"; // Importamos el cliente
+import { supabase } from "../services/supabaseClient";
 import { Session, User } from "@supabase/supabase-js";
 
 /**
  * Implementación concreta del AuthRepository usando Supabase.
  */
 export class SupabaseAuthRepository implements AuthRepository {
-  async signInWithEmail({
-    email,
-    password,
-  }: AuthCredentials): Promise<{
+  async signInWithEmail({ email, password }: AuthCredentials): Promise<{
     user: User | null;
     session: Session | null;
     error: any;
@@ -82,5 +79,34 @@ export class SupabaseAuthRepository implements AuthRepository {
     // configuradas en el panel de Supabase Auth (que ya sabemos que funciona por el registro).
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     return { error };
+  }
+
+  /**
+   * Implementa la actualización del perfil.
+   * La RLS (Row Level Security) que definiste asegura que
+   * esta operación solo funcione si auth.uid() === id.
+   */
+  async updateProfile(
+    userId: string,
+    updates: Partial<Omit<Profile, "id" | "rol" | "created_at">>
+  ): Promise<{ profile: Profile | null; error: any }> {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId)
+      .select() // Devuelve la fila actualizada
+      .single();
+
+    return { profile: data as Profile | null, error };
+  }
+
+  /**
+   * Implementa la actualización del email en el servicio de Auth.
+   */
+  async updateUserEmail(
+    email: string
+  ): Promise<{ user: User | null; error: any }> {
+    const { data, error } = await supabase.auth.updateUser({ email });
+    return { user: data.user, error };
   }
 }

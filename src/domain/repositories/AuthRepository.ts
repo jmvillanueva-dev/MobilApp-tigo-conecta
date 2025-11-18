@@ -50,4 +50,19 @@ export interface AuthRepository {
    * Envía un email para resetear la contraseña
    */
   resetPasswordForEmail(email: string): Promise<{ error: any }>;
+
+  /**
+   * Actualiza los datos mutables del usuario en la tabla 'profiles'.
+   * Usamos Partial<Profile> para permitir actualizaciones parciales (ej: solo nombre).
+   */
+  updateProfile(
+    userId: string,
+    updates: Partial<Omit<Profile, "id" | "rol" | "created_at">>
+  ): Promise<{ profile: Profile | null; error: any }>;
+
+  /**
+   * Actualiza el email de autenticación del usuario (en auth.users).
+   * Supabase enviará un email de confirmación para este cambio.
+   */
+  updateUserEmail(email: string): Promise<{ user: User | null; error: any }>;
 }
