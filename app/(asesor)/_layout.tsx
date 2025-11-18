@@ -97,6 +97,15 @@ export default function AsesorTabLayout() {
           tabBarStyle: { display: "none" },
         }}
       />
+
+      <Tabs.Screen
+        name="chat-detail"
+        options={{
+          href: null,
+          headerShown: false,
+          tabBarStyle: { display: "none" },
+        }}
+      />
     </Tabs>
   );
 }
