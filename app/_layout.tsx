@@ -4,13 +4,16 @@ import {
   AuthProvider,
   useAuth,
 } from "../src/presentation/contexts/AuthContext";
+import { NotificationProvider } from "../src/presentation/contexts/NotificationContext";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <NotificationProvider>
+        <RootLayoutNav />
+      </NotificationProvider>
     </AuthProvider>
   );
 }
