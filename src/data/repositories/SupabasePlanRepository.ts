@@ -16,6 +16,15 @@ export class SupabasePlanRepository implements PlanRepository {
     return { plans: data as PlanMovil[] | null, error };
   }
 
+  async getAllPlans(): Promise<{ plans: PlanMovil[] | null; error: any }> {
+    const { data, error } = await supabase
+      .from("planes_moviles")
+      .select("*")
+      .order("created_at", { ascending: false }); // Los más recientes primero
+
+    return { plans: data as PlanMovil[] | null, error };
+  }
+
   async getPlanById(
     id: string
   ): Promise<{ plan: PlanMovil | null; error: any }> {
@@ -25,6 +34,36 @@ export class SupabasePlanRepository implements PlanRepository {
       .eq("id", id)
       .single();
 
+    return { plan: data as PlanMovil | null, error };
+  }
+
+  async deletePlan(id: string): Promise<{ error: any }> {
+    const { error } = await supabase
+      .from("planes_moviles")
+      .delete()
+      .eq("id", id);
+
+    return { error };
+  }
+
+  // Crear Plan
+  async createPlan(plan: Omit<PlanMovil, "id" | "created_at">): Promise<{ plan: PlanMovil | null; error: any }> {
+    const { data, error } = await supabase
+      .from("planes_moviles")
+      .insert(plan)
+      .select()
+      .single();
+    return { plan: data as PlanMovil | null, error };
+  }
+
+  // Actualizar Plan
+  async updatePlan(id: string, updates: Partial<PlanMovil>): Promise<{ plan: PlanMovil | null; error: any }> {
+    const { data, error } = await supabase
+      .from("planes_moviles")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
     return { plan: data as PlanMovil | null, error };
   }
 }
