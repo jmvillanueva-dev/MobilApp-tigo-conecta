@@ -18,6 +18,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { PlanMovil } from "../../src/domain/entities/Plan";
 import { PlanRepository } from "../../src/domain/repositories/PlanRepository";
 import { SupabasePlanRepository } from "../../src/data/repositories/SupabasePlanRepository";
+import { useAuth } from "../../src/presentation/contexts/AuthContext";
+import { SupabaseContratacionRepository } from "../../src/data/repositories/SupabaseContratacionRepository";
 
 export default function PlanDetailScreen() {
   const router = useRouter();
@@ -27,6 +29,7 @@ export default function PlanDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const { user } = useAuth();
 
   const planRepository: PlanRepository = new SupabasePlanRepository();
 
@@ -62,25 +65,46 @@ export default function PlanDetailScreen() {
   };
 
   const handleContratar = () => {
-    // Aquí conectaremos con la Base de Datos en el siguiente paso
+    if (!user || !plan) return;
+
     Alert.alert(
       "Confirmar Contratación",
-      `¿Estás seguro de que deseas contratar el plan ${plan?.nombre}?`,
+      `¿Estás seguro de que deseas contratar el plan ${plan.nombre}?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Sí, Contratar",
-          onPress: () => {
-            // Simulación por ahora
+          onPress: async () => {
             setProcessing(true);
-            setTimeout(() => {
-              setProcessing(false);
+
+            const contratacionRepo = new SupabaseContratacionRepository();
+            const { error } = await contratacionRepo.createContratacion(
+              user.id,
+              plan.id
+            );
+
+            setProcessing(false);
+
+            if (error) {
+              Alert.alert("Error", "No se pudo procesar la solicitud.");
+              console.error(error);
+            } else {
               Alert.alert(
-                "Solicitud Enviada",
-                "En el próximo paso implementaremos el guardado en la base de datos."
+                "¡Solicitud Enviada!",
+                "Tu solicitud ha sido registrada. Puedes ver el estado en 'Mis Planes'.",
+                [
+                  {
+                    text: "Ir a Mis Planes",
+                    onPress: () => router.replace("/(usuario)/mis-planes"),
+                  },
+                  {
+                    text: "OK",
+                    style: "default",
+                    onPress: () => router.back(),
+                  },
+                ]
               );
-              router.back();
-            }, 1500);
+            }
           },
         },
       ]
