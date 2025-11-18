@@ -18,7 +18,7 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>BIENVENIDO a Tigo</Text>
@@ -101,9 +101,11 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#007AFF",
   },
   secondaryButtonText: {
-    color: "#007AFF", // Mismo azul
+    color: "#007AFF",
     fontSize: 16,
     fontWeight: "600",
   },
